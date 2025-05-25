@@ -2,7 +2,6 @@
 
 use clap::{Parser, ValueEnum};
 use csv_qsniffer::{Dialect, Sniffer};
-use serde_json;
 use std::fs::File;
 use std::io::{self, BufReader, Read};
 use std::path::PathBuf;
@@ -39,7 +38,7 @@ enum OutputFormat {
     Human,
     /// JSON output
     Json,
-    /// CSV output (delimiter,quote_char,has_headers,escape)
+    /// CSV output (`delimiter,quote_char,has_headers,escape`)
     Csv,
 }
 
@@ -90,7 +89,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let dialect = match sniffer.sniff_from_string(&input_data) {
         Ok(dialect) => dialect,
         Err(e) => {
-            eprintln!("Error detecting CSV dialect: {}", e);
+            eprintln!("Error detecting CSV dialect: {e}");
             std::process::exit(1);
         }
     };
@@ -114,7 +113,7 @@ fn print_human_readable(dialect: &Dialect, verbose: bool) {
         b' ' => "\\s (space)".to_string(),
         b => format!("'{}' ({})", b as char, b),
     };
-    println!("Delimiter: {}", delimiter_display);
+    println!("Delimiter: {delimiter_display}");
 
     match dialect.quote_char {
         Some(quote) => println!("Quote character: '{}'", quote as char),
@@ -164,20 +163,20 @@ fn print_json(dialect: &Dialect) -> Result<(), Box<dyn std::error::Error>> {
 
 fn print_csv(dialect: &Dialect) {
     let delimiter = dialect.delimiter as char;
-    let quote_char = dialect.quote_char.map(|c| c as char).unwrap_or('\0');
-    let escape = dialect.escape.map(|c| c as char).unwrap_or('\0');
+    let quote_char = dialect.quote_char.map_or('\0', |c| c as char);
+    let escape = dialect.escape.map_or('\0', |c| c as char);
 
     println!(
         "{},{},{},{}",
         delimiter,
         if quote_char == '\0' {
-            "".to_string()
+            String::new()
         } else {
             quote_char.to_string()
         },
         dialect.has_headers,
         if escape == '\0' {
-            "".to_string()
+            String::new()
         } else {
             escape.to_string()
         }

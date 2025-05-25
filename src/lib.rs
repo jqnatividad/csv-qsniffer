@@ -3,7 +3,7 @@
 //! A CSV dialect detection library using the Table Uniformity Method (TUM).
 //!
 //! This library implements the approach described by ws-garcia, which outperforms
-//! existing solutions like CleverCSV and csv.Sniffer by using table uniformity
+//! existing solutions like `CleverCSV` and csv.Sniffer by using table uniformity
 //! measurements to detect the best CSV dialect.
 //!
 //! ## Example
@@ -83,7 +83,7 @@ impl Default for Sniffer {
 
 impl Sniffer {
     /// Create a new CSV sniffer with default settings
-    pub fn new() -> Self {
+    #[must_use] pub fn new() -> Self {
         let mut type_regexes = HashMap::new();
 
         // Integer pattern
@@ -404,7 +404,7 @@ impl Sniffer {
         }
 
         // Average uniformity across all columns
-        let avg_uniformity = total_score / valid_columns as f64;
+        let avg_uniformity = total_score / f64::from(valid_columns);
 
         // Bonus for consistent row length
         let row_consistency_bonus = 1.0; // All rows have same length if we got here
@@ -412,7 +412,7 @@ impl Sniffer {
         // Penalty for too many empty fields
         let empty_penalty = self.calculate_empty_penalty(table);
 
-        avg_uniformity * row_consistency_bonus - empty_penalty
+        avg_uniformity.mul_add(row_consistency_bonus, -empty_penalty)
     }
 
     /// Count occurrences of each data type in a column
