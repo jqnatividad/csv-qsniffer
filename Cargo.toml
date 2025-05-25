@@ -3,7 +3,7 @@ name = "csv-qsniffer"
 version = "0.1.0"
 edition = "2021"
 description = "A CSV dialect detection library using Wilfredo Garcia's Table Uniformity Method"
-license = "MIT OR Apache-2.0"
+license = "MIT"
 repository = "https://github.com/jqnatividad/csv-qsniffer"
 
 [[bin]]
