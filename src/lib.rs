@@ -23,6 +23,7 @@ use csv::{ReaderBuilder, StringRecord};
 use regex::Regex;
 use std::collections::HashMap;
 use std::io::{BufRead, Cursor};
+use std::sync::OnceLock;
 use thiserror::Error;
 
 /// Errors that can occur during CSV dialect detection
@@ -65,25 +66,12 @@ struct Table {
     num_rows: usize,
 }
 
-/// Main CSV dialect detection engine
-pub struct Sniffer {
-    /// Maximum number of rows to analyze for dialect detection
-    pub max_rows: usize,
-    /// Minimum number of rows required for analysis
-    pub min_rows: usize,
-    /// Data type detection regexes
-    type_regexes: HashMap<DataType, Regex>,
-}
+/// Global static regex cache - compiled once and reused across all Sniffer instances
+static TYPE_REGEXES: OnceLock<HashMap<DataType, Regex>> = OnceLock::new();
 
-impl Default for Sniffer {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl Sniffer {
-    /// Create a new CSV sniffer with default settings
-    #[must_use] pub fn new() -> Self {
+/// Initialize the global regex cache
+fn get_type_regexes() -> &'static HashMap<DataType, Regex> {
+    TYPE_REGEXES.get_or_init(|| {
         let mut type_regexes = HashMap::new();
 
         // Integer pattern
@@ -149,10 +137,31 @@ impl Sniffer {
             Regex::new(r"^[+-]?\d+(\.\d+)?%$").unwrap(),
         );
 
+        type_regexes
+    })
+}
+
+/// Main CSV dialect detection engine
+pub struct Sniffer {
+    /// Maximum number of rows to analyze for dialect detection
+    pub max_rows: usize,
+    /// Minimum number of rows required for analysis
+    pub min_rows: usize,
+}
+
+impl Default for Sniffer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Sniffer {
+    /// Create a new CSV sniffer with default settings
+    #[must_use]
+    pub fn new() -> Self {
         Self {
             max_rows: 1000,
             min_rows: 2,
-            type_regexes,
         }
     }
 
@@ -275,15 +284,9 @@ impl Sniffer {
             return false;
         }
 
-        self.type_regexes
-            .get(&DataType::Integer)
-            .unwrap()
-            .is_match(field)
-            || self
-                .type_regexes
-                .get(&DataType::Float)
-                .unwrap()
-                .is_match(field)
+        let regexes = get_type_regexes();
+        regexes.get(&DataType::Integer).unwrap().is_match(field)
+            || regexes.get(&DataType::Float).unwrap().is_match(field)
     }
 
     /// Parse CSV data with a specific dialect
@@ -350,6 +353,8 @@ impl Sniffer {
             return DataType::Empty;
         }
 
+        let regexes = get_type_regexes();
+
         // Check each data type in order of specificity
         let type_order = [
             DataType::Boolean,
@@ -366,7 +371,7 @@ impl Sniffer {
         ];
 
         for data_type in &type_order {
-            if let Some(regex) = self.type_regexes.get(data_type) {
+            if let Some(regex) = regexes.get(data_type) {
                 if regex.is_match(trimmed) {
                     return data_type.clone();
                 }
