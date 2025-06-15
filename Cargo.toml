@@ -1,7 +1,7 @@
 [package]
 name = "csv-qsniffer"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 description = "A CSV dialect detection library using Wilfredo Garcia's Table Uniformity Method"
 license = "MIT"
 repository = "https://github.com/jqnatividad/csv-qsniffer"
