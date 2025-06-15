@@ -371,6 +371,7 @@ impl Sniffer {
         ];
 
         for data_type in &type_order {
+            #[allow(clippy::collapsible_if)]
             if let Some(regex) = regexes.get(data_type) {
                 if regex.is_match(trimmed) {
                     return data_type.clone();
